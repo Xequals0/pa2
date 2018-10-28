@@ -1,13 +1,23 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 
+//Encryption: Ei = (Pi + Ki) % 26
+char encrypt(char key, char c){
+    int value = (c + key) % 26;
+    value += 'a';
+    return value;
+}
+
+//Decryption: Di = (Ei - Ki + 26) % 26
 char decrypt(char key, char c){
 	char ret = c - (key - 'a');// + 1);
 	if (ret < 'a'){
 		int shift = 'a' - ret ;
-		return 'z' - shift + 1; 
+        return 'z' - shift + 1;
 	}
+    return ret;
 }
 
 int main(int argc, const char* argv[]){
@@ -31,9 +41,11 @@ int main(int argc, const char* argv[]){
 			j=0;
 		}
 //		printf("j: %d\n", j);
-		char key = keys[j];
-		char ret = decrypt(key, c[i]);
-		printf("returned: %c\n", ret);
+		char key = toupper(keys[j]);
+		/*char ret = encrypt(key, toupper(c[i]));
+		printf("returned: %c\n", ret);*/
+        char ret = decrypt(key, toupper(c[i]));
+        printf("returned: %c\n", ret);
 	}
 }
 
