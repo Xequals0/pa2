@@ -4,48 +4,52 @@
 #include <ctype.h>
 
 //Encryption: Ei = (Pi + Ki) % 26
-char encrypt(char key, char c){
-    int value = (c + key) % 26;
+char* encrypt(char* key, char c[]){
+/*    int value = (c + key) % 26;
     value += 'a';
-    return value;
+    return value; */
+
+	int i;
+	char currKey = *key;
+	for(i = 0; c[i] != '\0'; i++){
+		currKey = *key + (i % strlen(key));
+		char newChar = c[i] + (currKey - 'a');
+		if(newChar > 'z'){
+			int shift = newChar - 'z';
+			c[i] = 'a' + shift - 1;
+		}
+		else
+			c[i] = newChar;
+	}
+	return c;
 }
 
 //Decryption: Di = (Ei - Ki + 26) % 26
-char decrypt(char key, char c){
-	char ret = c - (key - 'a');// + 1);
-	if (ret < 'a'){
-		int shift = 'a' - ret ;
-        return 'z' - shift + 1;
+char* decrypt(char* key, char c[]){
+	
+	int i;
+	char currKey = *key;
+	for(i =0; c[i] != '\0'; i++){
+		currKey = *(key) + (i % strlen(key));
+		char newChar = c[i] - (currKey - 'a');
+		if(newChar < 'a'){
+			int shift = 'a' - newChar;
+			c[i] = 'z' - shift +1;
+		}
+		else{
+			c[i] = newChar;	
+		}
 	}
-    return ret;
+	
+    return c;
 }
 
 int main(int argc, const char* argv[]){
-
-	if(argc != 3){
-		printf("Incorrect number of arguements\n");
-		return 1;
-	}
-
-	int size = strlen(argv[1]);
-	char keys[size];
-	strcpy(keys,argv[1]);
+	char s[] = "abcdz";
+	char* key = "b";
+	char* s2 = decrypt(key, s);
+	printf("s: %s\n", s2);
 	
-	size = strlen(argv[2]);
-	char c[size];
-	strcpy(c, argv[2]);
-
-	int i,j;
-	for(i=0, j = 0; i < strlen(c); i++, j++){
-		if(j >= strlen(keys)){
-			j=0;
-		}
-//		printf("j: %d\n", j);
-		char key = toupper(keys[j]);
-		/*char ret = encrypt(key, toupper(c[i]));
-		printf("returned: %c\n", ret);*/
-        char ret = decrypt(key, toupper(c[i]));
-        printf("returned: %c\n", ret);
-	}
+	return 0;
 }
 
