@@ -6,12 +6,6 @@
 #include <asm/uaccess.h> //copy_to_user and copy_from_user
 #include <linux/uaccess.h>
 
-#define NAME "lkmc_character_device_create"
-
-static int major = -1;
-static struct cdev mycdev;
-static struct class *myclass = NULL;
-
 // create a stucture for our fake device
 struct fake_device{
 	char data[100];
@@ -24,10 +18,49 @@ int major_number; // will store our major number - extracted from dev_t using ma
 int ret; //will be used to hold return values of functions; this is because the kernel stack is very small
 	//so declaring varibales all over the pass in our module functions eats up the stack very fast
 dev_t dev_num; //will hold major number that kernel gives us
-#define DEVICE_NAME "testDevice"
-// name --> appears in /proc/devices
+#define DEVICE_NAME "cryptctl"
+// name --> appears in /procc/devices
 
+//Encryption: Ei = (Pi + Ki) % 26
+char* encrypt(char* key, char c[]){
+    /*    int value = (c + key) % 26;
+     value += 'a';
+     return value; */
+    
+    int i;
+    char currKey = *key;
+    for(i = 0; c[i] != '\0'; i++){
+        currKey = *key + (i % strlen(key));
+        char newChar = c[i] + (currKey - 'a');
+        if(newChar > 'z'){
+            int shift = newChar - 'z';
+            c[i] = 'a' + shift - 1;
+        }
+        else
+            c[i] = newChar;
+    }
+    return c;
+}
 
+//Decryption: Di = (Ei - Ki + 26) % 26
+char* decrypt(char* key, char c[]){
+    
+    int i;
+    char currKey = *key;
+    for(i =0; c[i] != '\0'; i++){
+        currKey = *(key) + (i % strlen(key));
+        char newChar = c[i] - (currKey - 'a');
+        if(newChar < 'a'){
+            int shift = 'a' - newChar;
+            c[i] = 'z' - shift +1;
+        }
+        else{
+            c[i] = newChar;
+        }
+    }
+    
+    return c;
+}
 
 //7. called on device_file open
 	//inode reference to the file on disk
@@ -80,45 +113,15 @@ struct file_operations fops = {
 	.read = device_read //points to the method to call whenreading from the device
 };
 
-static void cleanup(int device_created){
-	if(device_created){
-		device_destroy(myclass, major);
-		cdev_del(&mycdev);
-	}
-	if(myclass){
-		class_destroy(myclass);
-	if(major != -1)
-		unregister_chrdev_region(major, 1);
-}
-
 static int driver_entry(void){
 	//3. register our device wiht the system: a two step process
 	//(1) use dynamic allocation to assing our device 
 	ret = alloc_chrdev_region(&dev_num, 0, 1, DEVICE_NAME);
 	if(ret < 0){ //at time kernel functions return negatives, tehre is an erro
-		goto error;
+		printk(KERN_ALERT "testcode: failed to allcoate a major number");
+		return ret; //propogate error
 	}
 
-
-	if((myClass = class_create(THIS_MODULE, NAME "_sys"))
-		goto error;
-
-	if(device_create(myclass, NULL, major, NULL, NAME "_dev") == NULL)
-		goto error;
-	
-	cdev_init(&mycdev, &fops);
-	if(cdev_add(&mycdev, major, 1) == -1)
-		goto error;
-
-	return 0;
-
-	error:
-		cleanup(device_created);
-		return -1;
-	
-
-
-	/*
 	major_number = MAJOR(dev_num); //extracts the major number and store in our variable
 	printk(KERN_INFO "testcode: major number is %d", major_number);
 	printk(KERN_INFO "\tuse \"mknod /dev/%s c %d 0\" for device file", DEVICE_NAME, major_number); //dmesg
@@ -136,12 +139,18 @@ static int driver_entry(void){
 
 	//4. initalize our semaphore
 	sema_init(&virtual_device.sem, 1); //inital value of one
-	*/
+
 	return 0;
 }
 
 static void driver_exit(void){
-	cleanup(1);
+	//5. unregister everything in reverse order
+	//a.
+	cdev_del(mcdev);
+
+	//b.
+	unregister_chrdev_region(dev_num, 1);
+	printk(KERN_ALERT "testcode: unloaded module");
 }
 
 
