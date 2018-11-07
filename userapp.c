@@ -2,13 +2,27 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
 
 #define DEVICE "/dev/cryptctl"
+#define ENCDEV "/dev/encrypt"
+#define DECDEV "/dev/decrypt"
+#define IOCTLNUM 'k'
+#define CREATE_IOCTL _IOW(IOCTLNUM, 1, int)
+#define DELETE_IOCTL _IOW(IOCTLNUM, 2, int)
+#define CHANGE_IOCTL _IOW(IOCTLNUM, 3, int)
 
 int main() {
 	int i; //number of bytes written/read
 	int fd;
-	char ch, write_buf[100], read_buf[100];
+	int del;
+	typedef struct{
+		int pair;
+		char key[256];
+	} keyStruct;
+	char ch, write_buf[256], read_buf[100];
+
+	keyStruct changeKey;
 
 	fd = open(DEVICE, O_RDWR); //open fir reading and writing
 
@@ -17,18 +31,35 @@ int main() {
 		exit(-1);
 	}
 
-	printf("r = read from device\nw = write to device\netner command: ");
+	printf("r = read from device\nw = write to device\nc = create\nd = delete\nk = change key\netner command: ");
 	scanf("%c", &ch);
 
 	switch(ch){
 		case 'w':
 			printf("Enter data: ");
-			scanf("%s", write_buf);
+			scanf(" %[^\n]", write_buf);
 			write(fd, write_buf, sizeof(write_buf));
 			break;
 		case 'r':
 			read(fd, read_buf, sizeof(read_buf));
 			printf("device: %s\n", read_buf);
+			break;
+		case 'c':
+			printf("Enter key: ");
+			scanf(" %[^\n]", write_buf);
+			ioctl(fd, CREATE_IOCTL, write_buf);
+			break;
+		case 'd':
+			printf("Enter pair to delete: ");
+			scanf("%d", &del);			
+			ioctl(fd, DELETE_IOCTL, del);
+			break;
+		case 'k':
+			printf("Enter pair to change: ");
+			scanf("%d", &(changeKey.pair));
+			printf("Enter new key: ");
+			scanf(" %[^\n]", changeKey.key);			
+			ioctl(fd, CHANGE_IOCTL, &changeKey);
 			break;
 		default:
 			printf("command not recognized\n");
