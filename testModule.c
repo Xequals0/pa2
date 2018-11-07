@@ -96,7 +96,7 @@ ssize_t device_read(struct file* filp, char* bufStoreData, size_t bufCount, loff
 	for(i = 0; i < 100; i++)
 	{
 		if(devices[i].decminor == devminor) break;
-		else if(devides[i].encminor = decminor)
+		else if(devides[i].encminor == devminor)
 		{
 			encDev = 1;
 			break;
@@ -121,7 +121,7 @@ ssize_t device_write(struct file* filp, const char* bufSourceData, size_t bufCou
 	for(i = 0; i < 100; i++)
 	{
 		if(devices[i].decminor == devminor) break;
-		else if(devides[i].encminor = decminor)
+		else if(devides[i].encminor == devminor)
 		{
 			encDev = 1;
 			break;
