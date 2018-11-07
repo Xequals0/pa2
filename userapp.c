@@ -3,7 +3,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#define DEVICE "/dev/testdevice"
+#define DEVICE "/dev/cryptctl"
 
 int main() {
 	int i; //number of bytes written/read
@@ -23,7 +23,7 @@ int main() {
 	switch(ch){
 		case 'w':
 			printf("Enter data: ");
-			scanf(" %[^\n]", write_buf);
+			scanf("%s", write_buf);
 			write(fd, write_buf, sizeof(write_buf));
 			break;
 		case 'r':
