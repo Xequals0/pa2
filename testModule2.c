@@ -30,6 +30,7 @@ char* encrypt(char* key, char c[]){
 	int shift;
 	char newChar;
 	for(i = 0; c[i] != '\0'; i++){
+		if(c[i] == ' ') continue;
 		currKey = *key + (i % strlen(key));
 		newChar = c[i] + (currKey - 'a');
 		if(newChar > 'z'){
@@ -48,11 +49,14 @@ char* decrypt(char* key, char c[]){
 
 	int i;
 	char currKey = *key;
+	char newChar;
+	int shift;
 	for(i =0; c[i] != '\0'; i++){
+		if(c[i] == ' ')continue;
 		currKey = *(key) + (i % strlen(key));
-		char newChar = c[i] - (currKey - 'a');
+		newChar = c[i] - (currKey - 'a');
 		if(newChar < 'a'){
-			int shift = 'a' - newChar;
+			shift = 'a' - newChar;
 			c[i] = 'z' - shift +1;
 		}
 		else{
@@ -77,9 +81,14 @@ int device_open(struct inode *inode, struct file *filp){	//only allow one proces
 //8. called when user wants to get information from the device
 ssize_t device_read(struct file* filp, char* bufStoreData, size_t bufCount, loff_t* curOffset){
 	//take data from kernel space(device) to user space (process)
-	printk(KERN_INFO "testcode: Reading from device");
+	char *str;
+	char str1[100];
+	char* key = "abcdef";
+	printk(KERN_INFO "testcode: reading - in data= %s", virtual_device.data);
+	str = decrypt(key, virtual_device.data);
+	strcpy(str1, str);
 	//copy_to_user(destination, source, sizeToTransfer);
-	ret = copy_to_user(bufStoreData, virtual_device.data, bufCount);
+	ret = copy_to_user(bufStoreData, str1, bufCount);
 	return ret;
 }
 
@@ -87,17 +96,15 @@ ssize_t device_read(struct file* filp, char* bufStoreData, size_t bufCount, loff
 ssize_t device_write(struct file* filp, const char* bufSourceData, size_t bufCount, loff_t* curOffset){
 	//send data from user to kernel
 	//copy_from_user(dest, source, count)
-	char key[100];
+	char *key = "abcdef";
 	char * str;
 	char str1[100];
 	char str2[100];
 
 	strcpy(str2, bufSourceData);
-	key[0] = 'b';
-	key[1] = '\0';
 
 	str = encrypt(key, str2);
-	
+
 	strcpy(str1, str);
 
 	printk(KERN_INFO "testcode: str =%s ", str1);
