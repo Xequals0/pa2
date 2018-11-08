@@ -23,6 +23,7 @@ int main() {
 	char ch, write_buf[256], read_buf[100];
 
 	keyStruct changeKey;
+	keyStruct createDev;
 
 	fd = open(DEVICE, O_RDWR); //open fir reading and writing
 
@@ -46,8 +47,9 @@ int main() {
 			break;
 		case 'c':
 			printf("Enter key: ");
-			scanf(" %[^\n]", write_buf);
-			ioctl(fd, CREATE_IOCTL, write_buf);
+			scanf(" %[^\n]", createDev.key);
+			ioctl(fd, CREATE_IOCTL, &createDev);
+			printf("Pair created: %d\n",createDev.pair);
 			break;
 		case 'd':
 			printf("Enter pair to delete: ");

@@ -160,9 +160,9 @@ static long device_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	printk(KERN_INFO "IOCTL CALLED");	
 	switch(cmd){
 		case CREATE_IOCTL:
-			printk(KERN_INFO "%s",(char*) arg);
-			copy_from_user(key, (char*) arg, strlen((char*)arg)+1);
-			create_dev_pair(key);			
+			copy_from_user(key, ((keyStruct*) arg)->key, strlen(((keyStruct*) arg)->key) + 1);
+			pair = create_dev_pair(key);
+			copy_to_user(&(((keyStruct*) arg)->pair), &pair, sizeof(int));			
 			break;
 		case DELETE_IOCTL:
 			printk(KERN_INFO "%ld", arg);
@@ -279,7 +279,7 @@ int create_dev_pair(char* key)
 
 	minor++;
 	count++;
-	return 0;
+	return count-1;;
 	error:
 		printk(KERN_INFO "ERROR");
 		cleanup(1);
