@@ -31,9 +31,7 @@ typedef struct
 	int encminor;
 	int decminor;
 	struct cdev *enccdev;
-	struct class *encclass;
 	struct cdev *deccdev;
-	struct class *decclass;	
 } devpair;
 
 devpair devices[100];
@@ -96,7 +94,7 @@ ssize_t device_read(struct file* filp, char* bufStoreData, size_t bufCount, loff
 	for(i = 0; i < 100; i++)
 	{
 		if(devices[i].decminor == devminor) break;
-		else if(devides[i].encminor == devminor)
+		else if(devices[i].encminor == devminor)
 		{
 			encDev = 1;
 			break;
@@ -121,7 +119,7 @@ ssize_t device_write(struct file* filp, const char* bufSourceData, size_t bufCou
 	for(i = 0; i < 100; i++)
 	{
 		if(devices[i].decminor == devminor) break;
-		else if(devides[i].encminor == devminor)
+		else if(devices[i].encminor == devminor)
 		{
 			encDev = 1;
 			break;
@@ -197,11 +195,9 @@ static void cleanup(int device_created){
 		{
 			if(devices[i].encminor != -1)
 			{
-				if(devices[i].encclass)device_destroy(devices[i].encclass, MKDEV(MAJOR(major),devices[i].encminor));
-				if(devices[i].encclass)class_destroy(devices[i].encclass);
+				device_destroy(myclass, MKDEV(MAJOR(major),devices[i].encminor));
 				if(devices[i].enccdev)cdev_del(devices[i].enccdev);
-				if(devices[i].decclass)device_destroy(devices[i].decclass, MKDEV(MAJOR(major),devices[i].decminor));
-				if(devices[i].decclass)class_destroy(devices[i].decclass);
+				device_destroy(myclass, MKDEV(MAJOR(major),devices[i].decminor));
 				if(devices[i].deccdev)cdev_del(devices[i].deccdev);
 			}
 		}
@@ -211,7 +207,7 @@ static void cleanup(int device_created){
 		cdev_del(mycdev);		
 	}
 	if(myclass) class_destroy(myclass);
-	if(major != -1) unregister_chrdev_region(major, 1);
+	if(major != -1) unregister_chrdev_region(major, 201);
 }
 
 int change_key(char* key, int pair)
@@ -229,12 +225,12 @@ int delete_dev_pair(int pair)
 {
 	if(devices[pair].encminor != -1)
 	{
-		if(devices[pair].encclass)device_destroy(devices[pair].encclass, MKDEV(MAJOR(major),devices[pair].encminor));
-		if(devices[pair].encclass)class_destroy(devices[pair].encclass);
+		device_destroy(myclass, MKDEV(MAJOR(major),devices[pair].encminor));
 		if(devices[pair].enccdev)cdev_del(devices[pair].enccdev);
-		if(devices[pair].decclass)device_destroy(devices[pair].decclass, MKDEV(MAJOR(major),devices[pair].decminor));
-		if(devices[pair].decclass)class_destroy(devices[pair].decclass);
+		device_destroy(myclass, MKDEV(MAJOR(major),devices[pair].decminor));
 		if(devices[pair].deccdev)cdev_del(devices[pair].deccdev);
+
+		devices[pair].encminor = -1;
 	}
 
 	return 0;
@@ -245,12 +241,12 @@ int create_dev_pair(char* key)
 
 	char nameBuf[10];
 	sprintf(nameBuf, ENCDEV"%d", count);
-	printk(KERN_INFO "1- Major num: %d", MAJOR(major));
+	printk(KERN_INFO "1- Major num: %d", minor);
 
-	if((devices[count].encclass = class_create(THIS_MODULE, nameBuf)) == NULL)
-		goto error;
+	//if((devices[count].encclass = class_create(THIS_MODULE, nameBuf)) == NULL)
+	//	goto error;
 
-	if(device_create(devices[count].encclass, NULL, MKDEV(MAJOR(major), minor), NULL, nameBuf) == NULL)
+	if(device_create(myclass, NULL, MKDEV(MAJOR(major), minor), NULL, nameBuf) == NULL)
 		goto error;
 
 	devices[count].enccdev = cdev_alloc();
@@ -263,12 +259,12 @@ int create_dev_pair(char* key)
 
 	memset(nameBuf, '\0', strlen(nameBuf));
 	sprintf(nameBuf, DECDEV"%d", count);
-	printk(KERN_INFO "2- Major num: %d", MAJOR(major));
+	printk(KERN_INFO "2- Major num: %d", minor);
 
-	if((devices[count].decclass = class_create(THIS_MODULE, nameBuf)) == NULL)
-		goto error;
+	//if((devices[count].decclass = class_create(THIS_MODULE, nameBuf)) == NULL)
+	//	goto error;
 
-	if(device_create(devices[count].decclass, NULL, MKDEV(MAJOR(major), minor), NULL, nameBuf) == NULL)
+	if(device_create(myclass, NULL, MKDEV(MAJOR(major), minor), NULL, nameBuf) == NULL)
 		goto error;
 
 	devices[count].deccdev = cdev_alloc();
@@ -294,7 +290,7 @@ static int driver_entry(void){
 
 	int device_created = 0;
 	int i;
-	ret = alloc_chrdev_region(&major, 0, 2, NAME "_proc");
+	ret = alloc_chrdev_region(&major, 0, 201, NAME "_proc");
 	if(ret < 0){ //at time kernel functions return negatives, tehre is an erro
 		goto error;
 	}
@@ -304,12 +300,12 @@ static int driver_entry(void){
 	if((myclass = class_create(THIS_MODULE, NAME "_sys")) == NULL)
 		goto error;
 
-	if(device_create(myclass, NULL, major, NULL, NAME) == NULL)
+	if(device_create(myclass, NULL, MKDEV(MAJOR(major), 0), NULL, NAME) == NULL)
 		goto error;
 	device_created = 1;	
 	mycdev = cdev_alloc();
 	cdev_init(mycdev, &fops);
-	if(cdev_add(mycdev, major, 1) == -1)
+	if(cdev_add(mycdev, MKDEV(MAJOR(major), 0), 1) == -1)
 		goto error;
 
 	for(i = 0; i < 100; i++)
