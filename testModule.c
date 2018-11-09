@@ -117,6 +117,7 @@ ssize_t device_read(struct file* filp, char* bufStoreData, size_t bufCount, loff
 ssize_t device_write(struct file* filp, const char* bufSourceData, size_t bufCount, loff_t* curOffset){
 	int devminor = iminor(filp->f_path.dentry->d_inode);
 	int i;
+	int bytesRead;
 	int encDev = 0;
 	char * str;
 	char str1[1000];
@@ -135,7 +136,7 @@ ssize_t device_write(struct file* filp, const char* bufSourceData, size_t bufCou
 	printk(KERN_INFO "!!-- %d",encDev);
 	if(encDev)
 	{
-		strcpy(str2, bufSourceData);
+		bytesRead = copy_from_user(str2, bufSourceData, bufCount);
 		str = encrypt(devices[i].key, str2);
 		strcpy(str1, str);
 		printk(KERN_INFO "testcode: str =%s ", str1);
@@ -143,13 +144,13 @@ ssize_t device_write(struct file* filp, const char* bufSourceData, size_t bufCou
 	}
 	else
 	{
-		strcpy(str2, bufSourceData);
+		bytesRead = copy_from_user(str2, bufSourceData, bufCount);
 		str = decrypt(devices[i].key, str2);
 		strcpy(str1, str);
-		printk(KERN_INFO "testcode: str =%s ", str1);
-		strcpy(devices[i].data, str1);		
+		printk(KERN_INFO "testcode2: str =%s ", str1);
+		strcpy(devices[i].data, str1);	
 	}
-	return  0;
+	return  bytesRead;
 	//return ret;
 }
 
