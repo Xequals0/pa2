@@ -22,12 +22,18 @@ static struct class *myclass = NULL;
 typedef struct{
 	int pair;
 	char key[256];
+	int changed;
 } keyStruct;
+
+typedef struct{
+    int pair;
+    int deleted;
+} delStruct;
 
 typedef struct
 {
 	char key[256];
-	char data[100];
+	char data[1000];
 	int encminor;
 	int decminor;
 	struct cdev *enccdev;
@@ -101,12 +107,9 @@ ssize_t device_read(struct file* filp, char* bufStoreData, size_t bufCount, loff
 		}
 	}
 
-	char *str;
-	char str1[100];
 	printk(KERN_INFO "testcode: reading - in data= %s", devices[i].data);
-	str = decrypt(devices[i].key, devices[i].data);
-	strcpy(str1, str);
-	ret = copy_to_user(bufStoreData, str1, bufCount);
+	ret = copy_to_user(bufStoreData, devices[i].data, bufCount);
+	
 	return ret;
 }
 
@@ -115,6 +118,9 @@ ssize_t device_write(struct file* filp, const char* bufSourceData, size_t bufCou
 	int devminor = iminor(filp->f_path.dentry->d_inode);
 	int i;
 	int encDev = 0;
+	char * str;
+	char str1[1000];
+	char str2[1000];
 
 	for(i = 0; i < 100; i++)
 	{
@@ -126,19 +132,23 @@ ssize_t device_write(struct file* filp, const char* bufSourceData, size_t bufCou
 		}
 	}
 
-	char * str;
-	char str1[100];
-	char str2[100];
-
-	strcpy(str2, bufSourceData);
-
-	str = encrypt(devices[i].key, str2);
-
-	strcpy(str1, str);
-
-	printk(KERN_INFO "testcode: str =%s ", str1);
-	strcpy(devices[i].data, str1);
-
+	printk(KERN_INFO "!!-- %d",encDev);
+	if(encDev)
+	{
+		strcpy(str2, bufSourceData);
+		str = encrypt(devices[i].key, str2);
+		strcpy(str1, str);
+		printk(KERN_INFO "testcode: str =%s ", str1);
+		strcpy(devices[i].data, str1);
+	}
+	else
+	{
+		strcpy(str2, bufSourceData);
+		str = decrypt(devices[i].key, str2);
+		strcpy(str1, str);
+		printk(KERN_INFO "testcode: str =%s ", str1);
+		strcpy(devices[i].data, str1);		
+	}
 	return  0;
 	//return ret;
 }
@@ -166,11 +176,13 @@ static long device_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			break;
 		case DELETE_IOCTL:
 			printk(KERN_INFO "%ld", arg);
-			delete_dev_pair(arg);
+			ret = delete_dev_pair(((delStruct*) arg)->pair);
+			copy_to_user(&(((delStruct*) arg)->deleted), &ret, sizeof(int));						
 			break;
 		case CHANGE_IOCTL:
 			copy_from_user(key, ((keyStruct*) arg)->key, strlen(((keyStruct*) arg)->key) + 1);
-			change_key(key, ((keyStruct*) arg)->pair);
+			ret = change_key(key, ((keyStruct*) arg)->pair);
+			copy_to_user(&(((keyStruct*) arg)->changed), &ret, sizeof(int));									
 			break;
 		default:
 			break;
@@ -216,9 +228,10 @@ int change_key(char* key, int pair)
 	{
 		strcpy(devices[pair].key, key);
 		printk(KERN_INFO "-- %s -- %d --", devices[pair].key, pair);
+		return 0;
 	}
-	else printk(KERN_INFO "invalid pair");
-	return 0;
+	printk(KERN_INFO "invalid pair");
+	return -1;
 }
 
 int delete_dev_pair(int pair)
@@ -231,9 +244,11 @@ int delete_dev_pair(int pair)
 		if(devices[pair].deccdev)cdev_del(devices[pair].deccdev);
 
 		devices[pair].encminor = -1;
+
+		return 0;
 	}
 
-	return 0;
+	return -1;
 }
 
 int create_dev_pair(char* key)

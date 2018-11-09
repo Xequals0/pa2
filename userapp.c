@@ -16,14 +16,22 @@ int main() {
 	int i; //number of bytes written/read
 	int fd;
 	int del;
+	
 	typedef struct{
 		int pair;
 		char key[256];
 	} keyStruct;
+
+	typedef struct{
+		int pair;
+		int deleted;
+	} delStruct;
+
 	char ch, write_buf[256], read_buf[100];
 
 	keyStruct changeKey;
 	keyStruct createDev;
+	delStruct deleteDev;
 
 	fd = open(DEVICE, O_RDWR); //open fir reading and writing
 
