@@ -52,7 +52,6 @@ char* encrypt(char* key, char c[]){
 	for(i = 0; c[i] != '\0'; i++){
 		if(c[i] == ' ') continue;
 		currKey = *(key +(i % strlen(key)));
-		printk(KERN_INFO "here: %c",c[i] + (currKey - 'a'));
 		if(c[i] + (currKey - 'a') >  'z'){
 			c[i] = c[i] + currKey - 'z' - 1;
 		}
