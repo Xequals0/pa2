@@ -45,23 +45,17 @@ devpair devices[100];
 static int minor = 1;
 int count = 0;
 
-int ret; //will be used to hold return values of functions; this is because the kernel stack is very small
-
+int ret;
 char* encrypt(char* key, char c[]){
    	int i;
 	char currKey = *key;
-	int shift;
-	char newChar;
 	for(i = 0; c[i] != '\0'; i++){
 		if(c[i] == ' ') continue;
-		currKey = *key + (i % strlen(key));
-		newChar = c[i] + (currKey - 'a');
-		if(newChar > 'z'){
-			shift = newChar - 'z';
-			c[i] = 'a' + shift - 1;
-		}
-		else
-			c[i] = newChar;
+		currKey = *key +(i % strlen(key));
+		if(c[i] + (currKey - 'a') >  'z'){
+			c[i] = c[i] + currKey - 'z' - 1;
+		}else
+			c[i] = c[i] + (currKey -'a');
 	}
 	return c;
 }
@@ -109,11 +103,9 @@ ssize_t device_read(struct file* filp, char* bufStoreData, size_t bufCount, loff
 
 	printk(KERN_INFO "testcode: reading - in data= %s", devices[i].data);
 	ret = copy_to_user(bufStoreData, devices[i].data, bufCount);
-	
 	return ret;
 }
 
-//9. called when user wants to send infromation to the device
 ssize_t device_write(struct file* filp, const char* bufSourceData, size_t bufCount, loff_t* curOffset){
 	int devminor = iminor(filp->f_path.dentry->d_inode);
 	int i;
@@ -134,24 +126,23 @@ ssize_t device_write(struct file* filp, const char* bufSourceData, size_t bufCou
 	}
 
 	printk(KERN_INFO "!!-- %d",encDev);
+	bytesRead = copy_from_user(str2, bufSourceData, bufCount);
+	printk(KERN_INFO "input text: %s", str2);
 	if(encDev)
 	{
-		bytesRead = copy_from_user(str2, bufSourceData, bufCount);
 		str = encrypt(devices[i].key, str2);
 		strcpy(str1, str);
-		printk(KERN_INFO "testcode: str =%s ", str1);
 		strcpy(devices[i].data, str1);
+		printk(KERN_INFO "encrypted text: %s", str1);
 	}
 	else
 	{
-		bytesRead = copy_from_user(str2, bufSourceData, bufCount);
 		str = decrypt(devices[i].key, str2);
 		strcpy(str1, str);
-		printk(KERN_INFO "testcode2: str =%s ", str1);
-		strcpy(devices[i].data, str1);	
+		strcpy(devices[i].data, str1);
+		printk(KERN_INFO "decrypted text: %s", str1);
 	}
 	return  bytesRead;
-	//return ret;
 }
 
 int device_close(struct inode *inode, struct file *filp){
@@ -193,11 +184,11 @@ static long device_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 }
 
 struct file_operations fops = {
-	.owner = THIS_MODULE, //prevent unloading of this module when operations are in use
-	.open = device_open, //points to the method to call when opening the device
-	.release = device_close, //points to the method to call when closing the device
-	.write = device_write, //points to the method to call wehn writing to the device
-	.read = device_read, //points to the method to call whenreading from the device
+	.owner = THIS_MODULE,
+	.open = device_open,
+	.release = device_close,
+	.write = device_write,
+	.read = device_read,
 	.unlocked_ioctl = device_ioctl
 };
 
@@ -259,9 +250,6 @@ int create_dev_pair(char* key)
 	sprintf(nameBuf, ENCDEV"%d", count);
 	printk(KERN_INFO "1- Major num: %d", minor);
 
-	//if((devices[count].encclass = class_create(THIS_MODULE, nameBuf)) == NULL)
-	//	goto error;
-
 	if(device_create(myclass, NULL, MKDEV(MAJOR(major), minor), NULL, nameBuf) == NULL)
 		goto error;
 
@@ -276,9 +264,6 @@ int create_dev_pair(char* key)
 	memset(nameBuf, '\0', strlen(nameBuf));
 	sprintf(nameBuf, DECDEV"%d", count);
 	printk(KERN_INFO "2- Major num: %d", minor);
-
-	//if((devices[count].decclass = class_create(THIS_MODULE, nameBuf)) == NULL)
-	//	goto error;
 
 	if(device_create(myclass, NULL, MKDEV(MAJOR(major), minor), NULL, nameBuf) == NULL)
 		goto error;
@@ -307,7 +292,7 @@ static int driver_entry(void){
 	int device_created = 0;
 	int i;
 	ret = alloc_chrdev_region(&major, 0, 201, NAME "_proc");
-	if(ret < 0){ //at time kernel functions return negatives, tehre is an erro
+	if(ret < 0){
 		goto error;
 	}
 
