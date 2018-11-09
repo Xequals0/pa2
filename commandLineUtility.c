@@ -45,10 +45,10 @@ int main() {
 	}
     
     printf("Enter a command: \n\t c = create an encrypt/decrypt pair \n\t r = delete an encrypt/decrypt pair \n\t e = encrypt<plaintext> \n\t d = decrypt<ciphertext> \n\t k = change key\n\t q = quit\n\t$ ");
-    scanf("%c", &ch);
+    scanf(" %c", &ch);
     
     while(1){
-        printf("\n");
+        //printf("\n");
         switch(ch){
             case 'c':
                 printf("Please specify a key for the pair (256 byte limit): ");
@@ -74,7 +74,7 @@ int main() {
                 scanf("%d", &devindex);
                 sprintf(nameBuf, ENCDEV"%d", devindex);                
                 cryptfd = open(nameBuf, O_RDWR);
-                if (cryptfd == -1) printf("The following crypt device pair does not exist.\n");
+                if (cryptfd == -1) printf("The specified crypt device pair does not exist.\n");
                 else
                 {
                     printf("Please provide the plaintext to be encrypted (10000 byte limit): \n");
@@ -89,7 +89,7 @@ int main() {
                 scanf("%d", &devindex);
                 sprintf(nameBuf, DECDEV"%d", devindex);                
                 cryptfd = open(nameBuf, O_RDWR);
-                if (cryptfd == -1) printf("The following crypt device pair does not exist.\n");
+                if (cryptfd == -1) printf("The specifed crypt device pair does not exist.\n");
                 else
                 {
                     printf("Please provide the ciphertext to be decrypted (10000 byte limit): \n");
@@ -123,7 +123,7 @@ int main() {
             break;
         }
         printf("\nEnter a command:\n\t$ ");
-        scanf("%c", &ch);
+        scanf(" %c", &ch);
     }
     
     //Cleanup + exit calls:
