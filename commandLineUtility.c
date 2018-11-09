@@ -44,7 +44,7 @@ int main() {
 		exit(-1);
 	}
     
-    printf("Enter a command: \n\t c = create an encrypt/decrypt pair \n\t r = delete an encrypt/decrypt pair \n\t e = encrypt<plaintext> \n\t d = decrypt<ciphertext> \n\t k = change key\n\t q = quit\n\t$ ");
+    printf("Enter a command: \n\t c = create an encrypt/decrypt pair \n\t r = delete an encrypt/decrypt pair \n\t e = encrypt \n\t d = decrypt \n\t k = change key\n\t q = quit\n\t$ ");
     scanf(" %c", &ch);
     
     while(1){
